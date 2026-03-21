@@ -1,225 +1,297 @@
 import { SEO } from "@/components/SEO";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Baby, Clock, MessageCircle, AlertCircle, Users, Camera, Heart } from "lucide-react";
-import Link from "next/link";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { useRouter } from "next/router";
+import { useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
+import Image from "next/image";
+import { Baby, Brain, MessageCircle, Users, Camera, Shield, Heart, TrendingUp } from "lucide-react";
 
 export default function Home() {
-  const features = [
-    {
-      icon: Baby,
-      title: "Smart Tracker",
-      titleBn: "স্মার্ট ট্র্যাকার",
-      description: "Feed, sleep, diaper, growth, health, vaccinations — voice quick-log in Bangla/English",
-      descBn: "খাওয়া, ঘুম, ডায়াপার, বৃদ্ধি, স্বাস্থ্য, টিকা — ভয়েস কুইক-লগ বাংলা/ইংরেজিতে",
-      color: "bg-primary/10 text-primary",
-    },
-    {
-      icon: Clock,
-      title: "Predictor",
-      titleBn: "প্রেডিক্টর",
-      description: "Alerts 10-20 min early: 'Hungry in 15 min,' 'Sleep now' — learns her patterns",
-      descBn: "১০-২০ মিনিট আগে সতর্কতা: 'খাবার দিতে হবে ১৫ মিনিটে'",
-      color: "bg-secondary/10 text-secondary",
-    },
-    {
-      icon: MessageCircle,
-      title: "AI Assistant",
-      titleBn: "এআই সহায়ক",
-      description: "Chat: 'When to start solids?' 'Best diaper?' — Bangla + English, emergency mode instant",
-      descBn: "চ্যাট করুন: 'কখন শক্ত খাবার শুরু করব?' 'সেরা ডায়াপার কোনটা?'",
-      color: "bg-accent/10 text-accent-foreground",
-    },
-    {
-      icon: AlertCircle,
-      title: "Emergency Guide",
-      titleBn: "জরুরি গাইড",
-      description: "Choking, fever, fall, breathing — step-by-step, 999, hospital GPS (Apollo/Square/DMC)",
-      descBn: "শ্বাসরোধ, জ্বর, পড়ে যাওয়া — ধাপে ধাপে, ৯৯৯, হাসপাতাল জিপিএস",
-      color: "bg-destructive/10 text-destructive",
-    },
-    {
-      icon: Users,
-      title: "Family Portal",
-      titleBn: "পরিবার পোর্টাল",
-      description: "Parents control. Aunt/uncle view: live status, weekly report, voice messages",
-      descBn: "বাবা-মা নিয়ন্ত্রণ করেন। খালা/চাচা দেখতে পারেন: লাইভ স্ট্যাটাস, সাপ্তাহিক রিপোর্ট",
-      color: "bg-primary/10 text-primary",
-    },
-    {
-      icon: Camera,
-      title: "Memory Vault",
-      titleBn: "মেমরি ভল্ট",
-      description: "Auto-capture moments, weekly video, year-one film, export at age 18",
-      descBn: "স্বয়ংক্রিয় মুহূর্ত ধরা, সাপ্তাহিক ভিডিও, এক বছরের ফিল্ম",
-      color: "bg-secondary/10 text-secondary",
-    },
-  ];
+  const router = useRouter();
+  const { toast } = useToast();
+  const [isLogin, setIsLogin] = useState(true);
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [fullName, setFullName] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  const handleAuth = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+
+    try {
+      if (isLogin) {
+        const { error } = await supabase.auth.signInWithPassword({ email, password });
+        if (error) throw error;
+        router.push("/dashboard");
+      } else {
+        const { data: authData, error: signUpError } = await supabase.auth.signUp({
+          email,
+          password,
+        });
+
+        if (signUpError) throw signUpError;
+
+        if (authData.user) {
+          const { error: profileError } = await supabase.from("profiles").insert({
+            id: authData.user.id,
+            email,
+            full_name: fullName,
+          });
+
+          if (profileError) throw profileError;
+
+          toast({
+            title: "Account created!",
+            description: "Please check your email to verify your account.",
+          });
+          setIsLogin(true);
+        }
+      }
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <>
       <SEO
-        title="Yusra's Manager — Your Personal Baby Care Assistant"
-        description="Complete baby care app for Bangladeshi families. Track, predict, and manage your baby's health with AI-powered assistance in Bangla and English."
-        image="/og-image.png"
+        title="Yusra's Manager - AI-Powered Baby Care for Bangladesh"
+        description="Complete baby care tracking, AI predictions, emergency guide, and family sharing - built for Bangladesh"
       />
-
-      <div className="min-h-screen bg-background">
-        {/* Header */}
-        <header className="sticky top-0 z-50 border-b bg-background/80 backdrop-blur-md">
-          <div className="container mx-auto px-4 py-4 flex items-center justify-between max-w-6xl">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-gradient-hero flex items-center justify-center">
-                <Heart className="w-6 h-6 text-white" />
+      <div className="min-h-screen bg-gradient-to-br from-cream-50 via-white to-peach-50">
+        <div className="relative overflow-hidden">
+          <div className="absolute inset-0 bg-[url('/yusra-sleeping-green.jpg')] bg-cover bg-center opacity-5"></div>
+          
+          <div className="relative">
+            <header className="container mx-auto px-4 py-6">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 rounded-full bg-terracotta-100 flex items-center justify-center">
+                    <Baby className="w-6 h-6 text-terracotta-600" />
+                  </div>
+                  <div>
+                    <h1 className="text-2xl font-bold text-terracotta-600 font-baloo">Yusra's Manager</h1>
+                    <p className="text-sm text-neutral-600">যুসরার ম্যানেজার</p>
+                  </div>
+                </div>
               </div>
-              <div>
-                <h1 className="font-heading text-xl font-semibold text-foreground">Yusra&apos;s Manager</h1>
-                <p className="text-xs text-muted-foreground bangla-text">ইউসরা'স ম্যানেজার</p>
+            </header>
+
+            <section className="container mx-auto px-4 py-12 lg:py-20">
+              <div className="grid lg:grid-cols-2 gap-12 items-center">
+                <div className="space-y-6 animate-fade-in">
+                  <div className="inline-flex items-center gap-2 bg-terracotta-50 text-terracotta-600 px-4 py-2 rounded-full text-sm font-medium">
+                    <Heart className="w-4 h-4" />
+                    <span>Built with Love for Yusra</span>
+                  </div>
+                  
+                  <h2 className="text-5xl lg:text-6xl font-bold text-neutral-900 font-baloo leading-tight">
+                    Your AI-Powered
+                    <span className="text-terracotta-600"> Baby Care</span> Companion
+                  </h2>
+                  
+                  <p className="text-lg text-neutral-600 leading-relaxed">
+                    Track, predict, and care for Yusra with intelligent insights, emergency guidance, and family connection - all designed for Bangladesh.
+                  </p>
+                  
+                  <p className="text-lg font-baloo text-sage-600">
+                    ট্র্যাক করুন, পূর্বাভাস দিন এবং যুসরার যত্ন নিন বুদ্ধিমান অন্তর্দৃষ্টি, জরুরি নির্দেশনা এবং পারিবারিক সংযোগ সহ।
+                  </p>
+
+                  <div className="flex flex-col sm:flex-row gap-4 pt-4">
+                    <Button size="lg" className="text-lg px-8 gap-2" onClick={() => document.getElementById("auth-form")?.scrollIntoView({ behavior: "smooth" })}>
+                      <Baby className="w-5 h-5" />
+                      Get Started Free
+                    </Button>
+                    <Button size="lg" variant="outline" className="text-lg px-8">
+                      Watch Demo
+                    </Button>
+                  </div>
+                </div>
+
+                <div className="relative h-[400px] lg:h-[600px] animate-fade-in-delayed">
+                  <div className="absolute inset-0 bg-gradient-to-br from-terracotta-200 to-sage-200 rounded-3xl transform rotate-3"></div>
+                  <div className="absolute inset-0 bg-white rounded-3xl shadow-2xl overflow-hidden transform -rotate-1">
+                    <Image
+                      src="/yusra-portraits.jpg"
+                      alt="Yusra"
+                      fill
+                      className="object-cover"
+                      priority
+                    />
+                  </div>
+                </div>
               </div>
-            </div>
-            <Button variant="outline" size="sm">
-              <Users className="w-4 h-4 mr-2" />
-              Family Login
-            </Button>
-          </div>
-        </header>
+            </section>
 
-        {/* Hero Section */}
-        <section className="py-16 md:py-24">
-          <div className="container mx-auto px-4 max-w-6xl">
-            <div className="text-center space-y-6 animate-fade-in">
-              <Badge className="bg-primary/10 text-primary hover:bg-primary/20 border-primary/20">
-                Made with Love for Yusra
-              </Badge>
-              <h2 className="font-heading text-4xl md:text-6xl font-bold text-foreground leading-tight">
-                Your Baby&apos;s Personal
-                <br />
-                <span className="bg-gradient-hero bg-clip-text text-transparent">Care Assistant</span>
-              </h2>
-              <p className="text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto bangla-text">
-                ইউসরার জন্য বিশেষভাবে তৈরি — ট্র্যাক করুন, পূর্বাভাস পান এবং আপনার শিশুর যত্ন নিন AI-এর সাহায্যে
-              </p>
-              <p className="text-base md:text-lg text-muted-foreground max-w-2xl mx-auto">
-                Track, predict, and manage your baby&apos;s health with AI-powered assistance in Bangla and English
-              </p>
-              <div className="flex flex-col sm:flex-row gap-4 justify-center pt-4">
-                <Button size="lg" className="bg-primary hover:bg-primary/90 shadow-elevated">
-                  <Baby className="w-5 h-5 mr-2" />
-                  Start Tracking
-                </Button>
-                <Button size="lg" variant="outline" className="shadow-soft">
-                  <MessageCircle className="w-5 h-5 mr-2" />
-                  Ask Assistant
-                </Button>
+            <section className="container mx-auto px-4 py-16">
+              <div className="text-center mb-12">
+                <h3 className="text-3xl lg:text-4xl font-bold font-baloo mb-4">
+                  Everything You Need in One Place
+                </h3>
+                <p className="text-lg text-neutral-600">
+                  Comprehensive tools built specifically for Yusra's journey
+                </p>
               </div>
-            </div>
-          </div>
-        </section>
 
-        {/* Features Grid */}
-        <section className="py-16 bg-muted/30">
-          <div className="container mx-auto px-4 max-w-6xl">
-            <div className="text-center mb-12">
-              <h3 className="font-heading text-3xl md:text-4xl font-bold text-foreground mb-3">
-                Everything You Need
-              </h3>
-              <p className="text-muted-foreground bangla-text text-lg">
-                আপনার প্রয়োজনীয় সব কিছু
-              </p>
-            </div>
+              <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+                <Card className="p-6 hover:shadow-lg transition-shadow">
+                  <div className="w-12 h-12 rounded-full bg-terracotta-100 flex items-center justify-center mb-4">
+                    <Baby className="w-6 h-6 text-terracotta-600" />
+                  </div>
+                  <h4 className="text-lg font-semibold mb-2">Smart Tracker</h4>
+                  <p className="text-sm text-neutral-600 mb-2">Track feeding, sleep, diapers, growth with voice input in Bangla & English</p>
+                  <p className="text-xs font-baloo text-sage-600">ভয়েস ইনপুট সহ খাওয়ানো, ঘুম, ডায়াপার ট্র্যাক করুন</p>
+                </Card>
 
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {features.map((feature, index) => {
-                const Icon = feature.icon;
-                return (
-                  <Card
-                    key={index}
-                    className="p-6 card-soft hover:shadow-elevated transition-all duration-300 border-0 animate-fade-in"
-                    style={{ animationDelay: `${index * 100}ms` }}
-                  >
-                    <div className={`w-12 h-12 rounded-lg ${feature.color} flex items-center justify-center mb-4`}>
-                      <Icon className="w-6 h-6" />
+                <Card className="p-6 hover:shadow-lg transition-shadow">
+                  <div className="w-12 h-12 rounded-full bg-sage-100 flex items-center justify-center mb-4">
+                    <Brain className="w-6 h-6 text-sage-600" />
+                  </div>
+                  <h4 className="text-lg font-semibold mb-2">AI Predictions</h4>
+                  <p className="text-sm text-neutral-600 mb-2">Get 10-20 min early alerts for feeding, sleep, and care needs</p>
+                  <p className="text-xs font-baloo text-sage-600">খাবার ও ঘুমের জন্য আগাম সতর্কতা পান</p>
+                </Card>
+
+                <Card className="p-6 hover:shadow-lg transition-shadow">
+                  <div className="w-12 h-12 rounded-full bg-peach-100 flex items-center justify-center mb-4">
+                    <MessageCircle className="w-6 h-6 text-peach-600" />
+                  </div>
+                  <h4 className="text-lg font-semibold mb-2">AI Assistant</h4>
+                  <p className="text-sm text-neutral-600 mb-2">24/7 parenting advice, product recommendations, emergency guide</p>
+                  <p className="text-xs font-baloo text-sage-600">২৪/৭ পরামর্শ ও জরুরি নির্দেশনা</p>
+                </Card>
+
+                <Card className="p-6 hover:shadow-lg transition-shadow">
+                  <div className="w-12 h-12 rounded-full bg-cream-200 flex items-center justify-center mb-4">
+                    <Users className="w-6 h-6 text-terracotta-600" />
+                  </div>
+                  <h4 className="text-lg font-semibold mb-2">Family Portal</h4>
+                  <p className="text-sm text-neutral-600 mb-2">Share with grandparents, aunts, uncles - everyone stays connected</p>
+                  <p className="text-xs font-baloo text-sage-600">পরিবারের সবাই সংযুক্ত থাকুন</p>
+                </Card>
+              </div>
+            </section>
+
+            <section className="container mx-auto px-4 py-16 bg-gradient-to-br from-terracotta-50 to-sage-50 rounded-3xl my-16">
+              <div className="text-center mb-12">
+                <h3 className="text-3xl lg:text-4xl font-bold font-baloo mb-4">
+                  Built for Bangladesh Families
+                </h3>
+                <p className="text-lg text-neutral-600">
+                  Every feature designed with local context
+                </p>
+              </div>
+
+              <div className="grid md:grid-cols-3 gap-8">
+                <div className="text-center">
+                  <div className="w-16 h-16 rounded-full bg-white shadow-md flex items-center justify-center mx-auto mb-4">
+                    <Shield className="w-8 h-8 text-terracotta-600" />
+                  </div>
+                  <h4 className="font-semibold mb-2">EPI Bangladesh Schedule</h4>
+                  <p className="text-sm text-neutral-600">Automated vaccination reminders with local hospital integration</p>
+                </div>
+
+                <div className="text-center">
+                  <div className="w-16 h-16 rounded-full bg-white shadow-md flex items-center justify-center mx-auto mb-4">
+                    <TrendingUp className="w-8 h-8 text-sage-600" />
+                  </div>
+                  <h4 className="font-semibold mb-2">Local Shopping Assistant</h4>
+                  <p className="text-sm text-neutral-600">Chaldal, Daraz integration with Bangladesh product recommendations</p>
+                </div>
+
+                <div className="text-center">
+                  <div className="w-16 h-16 rounded-full bg-white shadow-md flex items-center justify-center mx-auto mb-4">
+                    <Camera className="w-8 h-8 text-peach-600" />
+                  </div>
+                  <h4 className="font-semibold mb-2">Emergency Hospitals</h4>
+                  <p className="text-sm text-neutral-600">Apollo, Square, DMC, BIRDEM - one-tap access with GPS</p>
+                </div>
+              </div>
+            </section>
+
+            <section id="auth-form" className="container mx-auto px-4 py-16">
+              <div className="max-w-md mx-auto">
+                <Card className="p-8">
+                  <h3 className="text-2xl font-bold text-center mb-6 font-baloo">
+                    {isLogin ? "Welcome Back" : "Create Account"}
+                  </h3>
+                  
+                  <form onSubmit={handleAuth} className="space-y-4">
+                    {!isLogin && (
+                      <div>
+                        <Label htmlFor="fullName">Full Name</Label>
+                        <Input
+                          id="fullName"
+                          type="text"
+                          value={fullName}
+                          onChange={(e) => setFullName(e.target.value)}
+                          required={!isLogin}
+                          placeholder="Enter your name"
+                        />
+                      </div>
+                    )}
+                    
+                    <div>
+                      <Label htmlFor="email">Email</Label>
+                      <Input
+                        id="email"
+                        type="email"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        required
+                        placeholder="your@email.com"
+                      />
                     </div>
-                    <h4 className="font-heading text-xl font-semibold text-foreground mb-1">
-                      {feature.title}
-                    </h4>
-                    <p className="text-sm text-muted-foreground bangla-text mb-3">
-                      {feature.titleBn}
-                    </p>
-                    <p className="text-sm text-muted-foreground leading-relaxed mb-2">
-                      {feature.description}
-                    </p>
-                    <p className="text-xs text-muted-foreground bangla-text leading-relaxed">
-                      {feature.descBn}
-                    </p>
-                  </Card>
-                );
-              })}
-            </div>
-          </div>
-        </section>
+                    
+                    <div>
+                      <Label htmlFor="password">Password</Label>
+                      <Input
+                        id="password"
+                        type="password"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        required
+                        placeholder="••••••••"
+                      />
+                    </div>
 
-        {/* Stats Section */}
-        <section className="py-16">
-          <div className="container mx-auto px-4 max-w-6xl">
-            <div className="grid md:grid-cols-3 gap-8 text-center">
-              <div className="animate-fade-in">
-                <div className="text-4xl md:text-5xl font-heading font-bold text-primary mb-2">100%</div>
-                <p className="text-muted-foreground">Offline Core Features</p>
-                <p className="text-sm text-muted-foreground bangla-text">অফলাইনে কাজ করে</p>
-              </div>
-              <div className="animate-fade-in" style={{ animationDelay: "100ms" }}>
-                <div className="text-4xl md:text-5xl font-heading font-bold text-secondary mb-2">&lt;10s</div>
-                <p className="text-muted-foreground">Emergency Response Time</p>
-                <p className="text-sm text-muted-foreground bangla-text">জরুরি প্রতিক্রিয়া সময়</p>
-              </div>
-              <div className="animate-fade-in" style={{ animationDelay: "200ms" }}>
-                <div className="text-4xl md:text-5xl font-heading font-bold text-accent-foreground mb-2">75%+</div>
-                <p className="text-muted-foreground">Prediction Accuracy</p>
-                <p className="text-sm text-muted-foreground bangla-text">পূর্বাভাস নির্ভুলতা</p>
-              </div>
-            </div>
-          </div>
-        </section>
+                    <Button type="submit" className="w-full" disabled={loading}>
+                      {loading ? "Please wait..." : isLogin ? "Sign In" : "Create Account"}
+                    </Button>
+                  </form>
 
-        {/* CTA Section */}
-        <section className="py-16 bg-gradient-hero">
-          <div className="container mx-auto px-4 max-w-4xl text-center">
-            <h3 className="font-heading text-3xl md:text-4xl font-bold text-white mb-4">
-              Ready to Start Your Journey?
-            </h3>
-            <p className="text-white/90 text-lg mb-3 bangla-text">
-              আজই শুরু করুন ইউসরার যত্নের যাত্রা
-            </p>
-            <p className="text-white/80 mb-8">
-              Join families across Bangladesh trusting AI-powered care for their little ones
-            </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Button size="lg" variant="secondary" className="shadow-elevated">
-                <Baby className="w-5 h-5 mr-2" />
-                Create Account
-              </Button>
-              <Button size="lg" variant="outline" className="bg-white/10 border-white/20 text-white hover:bg-white/20">
-                Learn More
-              </Button>
-            </div>
-          </div>
-        </section>
+                  <div className="mt-4 text-center">
+                    <button
+                      onClick={() => setIsLogin(!isLogin)}
+                      className="text-sm text-terracotta-600 hover:underline"
+                    >
+                      {isLogin ? "Don't have an account? Sign up" : "Already have an account? Sign in"}
+                    </button>
+                  </div>
+                </Card>
+              </div>
+            </section>
 
-        {/* Footer */}
-        <footer className="py-8 border-t bg-muted/20">
-          <div className="container mx-auto px-4 max-w-6xl">
-            <div className="flex flex-col md:flex-row justify-between items-center gap-4 text-sm text-muted-foreground">
-              <p className="bangla-text">
-                © 2026 Yusra&apos;s Manager — ভালোবাসার সাথে তৈরি
-              </p>
-              <p>
-                Made with love in Bangladesh
-              </p>
-            </div>
+            <footer className="container mx-auto px-4 py-12 border-t border-cream-200">
+              <div className="text-center text-neutral-600">
+                <p className="mb-2">© 2026 Yusra's Manager. Built with love for Yusra and her family.</p>
+                <p className="text-sm font-baloo">যুসরা এবং তার পরিবারের জন্য ভালোবাসা দিয়ে তৈরি।</p>
+              </div>
+            </footer>
           </div>
-        </footer>
+        </div>
       </div>
     </>
   );
