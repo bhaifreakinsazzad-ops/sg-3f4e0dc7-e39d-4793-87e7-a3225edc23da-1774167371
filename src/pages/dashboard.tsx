@@ -56,13 +56,13 @@ export default function Dashboard() {
       .order("feeding_time", { ascending: false });
 
     const { data: diapers } = await supabase
-      .from("diapers")
+      .from("diaper_changes")
       .select("*")
       .eq("baby_id", babyId)
       .gte("change_time", `${today}T00:00:00`);
 
     const { data: sleep } = await supabase
-      .from("sleep")
+      .from("sleep_sessions")
       .select("*")
       .eq("baby_id", babyId)
       .gte("start_time", `${today}T00:00:00`);

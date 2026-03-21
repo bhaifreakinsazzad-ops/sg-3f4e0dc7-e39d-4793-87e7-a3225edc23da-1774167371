@@ -70,7 +70,7 @@ export default function Tracker() {
 
   const [diaperForm, setDiaperForm] = useState({
     change_time: new Date().toISOString().slice(0, 16),
-    diaper_type: "wet",
+    change_type: "wet",
     has_rash: false,
     notes: "",
   });
@@ -113,7 +113,7 @@ export default function Tracker() {
     e.preventDefault();
     if (!babyId) return;
 
-    const { error } = await supabase.from("sleep").insert({
+    const { error } = await supabase.from("sleep_sessions").insert({
       baby_id: babyId,
       ...sleepForm,
       end_time: sleepForm.end_time || null,
@@ -137,9 +137,12 @@ export default function Tracker() {
     e.preventDefault();
     if (!babyId) return;
 
-    const { error } = await supabase.from("diapers").insert({
+    const { error } = await supabase.from("diaper_changes").insert({
       baby_id: babyId,
-      ...diaperForm,
+      change_time: diaperForm.change_time,
+      change_type: diaperForm.change_type,
+      has_rash: diaperForm.has_rash,
+      notes: diaperForm.notes,
     });
 
     if (error) {
@@ -148,7 +151,7 @@ export default function Tracker() {
       toast({ title: "Success", description: "Diaper change logged successfully" });
       setDiaperForm({
         change_time: new Date().toISOString().slice(0, 16),
-        diaper_type: "wet",
+        change_type: "wet",
         has_rash: false,
         notes: "",
       });
@@ -159,7 +162,7 @@ export default function Tracker() {
     e.preventDefault();
     if (!babyId) return;
 
-    const { error } = await supabase.from("growth").insert({
+    const { error } = await supabase.from("growth_records").insert({
       baby_id: babyId,
       ...growthForm,
       weight_kg: growthForm.weight_kg ? parseFloat(growthForm.weight_kg) : null,
@@ -419,10 +422,10 @@ export default function Tracker() {
                   </div>
 
                   <div>
-                    <Label htmlFor="diaper_type">Type / ধরন</Label>
+                    <Label htmlFor="change_type">Type / ধরন</Label>
                     <Select
-                      value={diaperForm.diaper_type}
-                      onValueChange={(value) => setDiaperForm({ ...diaperForm, diaper_type: value })}
+                      value={diaperForm.change_type}
+                      onValueChange={(value) => setDiaperForm({ ...diaperForm, change_type: value })}
                     >
                       <SelectTrigger>
                         <SelectValue />
