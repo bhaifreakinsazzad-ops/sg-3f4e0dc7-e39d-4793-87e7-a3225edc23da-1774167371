@@ -50,10 +50,17 @@ export default function Family() {
   const handleInvite = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    // Generate UUID for new profile
+    const profileId = crypto.randomUUID();
+    
     // Create profile first
     const { data: newProfile, error: profileError } = await supabase
       .from("profiles")
-      .insert({ email: inviteForm.email, full_name: inviteForm.name })
+      .insert({
+        id: profileId,
+        email: inviteForm.email,
+        full_name: inviteForm.name,
+      })
       .select()
       .single();
 
