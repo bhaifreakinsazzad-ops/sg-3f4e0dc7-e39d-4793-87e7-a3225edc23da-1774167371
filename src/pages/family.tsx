@@ -21,8 +21,7 @@ export default function Family() {
   const [inviteForm, setInviteForm] = useState({
     email: "",
     name: "",
-    relationship: "",
-    role: "viewer",
+    role: "viewer" as "admin" | "editor" | "viewer",
   });
 
   useEffect(() => {
@@ -51,33 +50,34 @@ export default function Family() {
   const handleInvite = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    const { data: babies } = await supabase
-      .from("babies")
-      .select("id")
-      .limit(1)
+    // Create profile first
+    const { data: newProfile, error: profileError } = await supabase
+      .from("profiles")
+      .insert({ email: inviteForm.email, full_name: inviteForm.name })
+      .select()
       .single();
 
-    if (!babies) {
-      toast({ title: "Error", description: "No baby profile found", variant: "destructive" });
+    if (profileError) {
+      toast({ title: "Error", description: profileError.message, variant: "destructive" });
       return;
     }
 
+    // Set permissions based on role
+    let permissions = "view";
+    if (inviteForm.role === "editor") permissions = "view,edit";
+    if (inviteForm.role === "admin") permissions = "view,edit,delete,manage";
+
     const { error } = await supabase.from("family_members").insert({
-      baby_id: babies.id,
-      user_id: user?.id || "",
-      name: inviteForm.name,
-      email: inviteForm.email,
-      relationship: inviteForm.relationship,
+      profile_id: newProfile.id,
       role: inviteForm.role,
-      can_edit: inviteForm.role === "editor",
-      can_view: true,
+      permissions: permissions,
     });
 
     if (error) {
       toast({ title: "Error", description: error.message, variant: "destructive" });
     } else {
       toast({ title: "Success", description: `Invitation sent to ${inviteForm.name}` });
-      setInviteForm({ email: "", name: "", relationship: "", role: "viewer" });
+      setInviteForm({ email: "", name: "", role: "viewer" });
       setShowInviteForm(false);
       loadFamilyMembers();
     }
@@ -153,47 +153,26 @@ export default function Family() {
                     </div>
                   </div>
 
-                  <div className="grid md:grid-cols-2 gap-4">
-                    <div>
-                      <Label htmlFor="relationship">Relationship / সম্পর্ক</Label>
-                      <Select
-                        value={inviteForm.relationship}
-                        onValueChange={(value) => setInviteForm({ ...inviteForm, relationship: value })}
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select..." />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="grandmother">Grandmother / নানি-দাদি</SelectItem>
-                          <SelectItem value="grandfather">Grandfather / নানা-দাদা</SelectItem>
-                          <SelectItem value="aunt">Aunt / খালা-ফুপু</SelectItem>
-                          <SelectItem value="uncle">Uncle / মামা-চাচা</SelectItem>
-                          <SelectItem value="sibling">Sibling / ভাই-বোন</SelectItem>
-                          <SelectItem value="caregiver">Caregiver / পরিচর্যাকারী</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div>
-                      <Label htmlFor="role">Access Level / প্রবেশাধিকার</Label>
-                      <Select
-                        value={inviteForm.role}
-                        onValueChange={(value) => setInviteForm({ ...inviteForm, role: value })}
-                      >
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="viewer">Viewer (View Only)</SelectItem>
-                          <SelectItem value="editor">Editor (Can Add Data)</SelectItem>
-                          <SelectItem value="admin">Admin (Full Control)</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
+                  <div>
+                    <Label htmlFor="role">Access Level / প্রবেশাধিকার</Label>
+                    <Select
+                      value={inviteForm.role}
+                      onValueChange={(value: "admin" | "editor" | "viewer") => setInviteForm({ ...inviteForm, role: value })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="viewer">Viewer (View Only)</SelectItem>
+                        <SelectItem value="editor">Editor (Can Add Data)</SelectItem>
+                        <SelectItem value="admin">Admin (Full Control)</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
 
                   <div className="bg-sage-50 p-3 rounded text-sm text-neutral-700">
-                    <strong>{inviteForm.role || "viewer"}:</strong>{" "}
-                    {roleDescriptions[inviteForm.role as keyof typeof roleDescriptions] || roleDescriptions.viewer}
+                    <strong>{inviteForm.role}:</strong>{" "}
+                    {roleDescriptions[inviteForm.role as keyof typeof roleDescriptions]}
                   </div>
 
                   <div className="flex gap-2">
