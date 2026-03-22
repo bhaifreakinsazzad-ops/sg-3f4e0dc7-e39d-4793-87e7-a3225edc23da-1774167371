@@ -1,8 +1,5 @@
 import { ReactNode } from "react";
 import { Navigation, Sidebar } from "./Navigation";
-import { Button } from "./ui/button";
-import { LogOut, User } from "lucide-react";
-import { useAuth } from "@/hooks/useAuth";
 import Link from "next/link";
 
 interface LayoutProps {
@@ -10,8 +7,6 @@ interface LayoutProps {
 }
 
 export function Layout({ children }: LayoutProps) {
-  const { user, signOut } = useAuth();
-
   return (
     <div className="min-h-screen bg-cream-50">
       <Sidebar />
@@ -24,20 +19,9 @@ export function Layout({ children }: LayoutProps) {
             </div>
             
             <div className="flex items-center gap-3 ml-auto">
-              {user && (
-                <>
-                  <Link href="/profile">
-                    <Button variant="ghost" size="sm" className="gap-2">
-                      <User className="w-4 h-4" />
-                      <span className="hidden sm:inline">{user.email}</span>
-                    </Button>
-                  </Link>
-                  <Button variant="ghost" size="sm" onClick={() => signOut()} className="gap-2">
-                    <LogOut className="w-4 h-4" />
-                    <span className="hidden sm:inline">Logout</span>
-                  </Button>
-                </>
-              )}
+              <Link href="/profile" className="text-sm text-muted-foreground hover:text-terracotta-600">
+                Profile
+              </Link>
             </div>
           </div>
         </header>
