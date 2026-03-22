@@ -1,93 +1,29 @@
 import { SEO } from "@/components/SEO";
 import { Layout } from "@/components/Layout";
-import { useAuth } from "@/hooks/useAuth";
-import { useRouter } from "next/router";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Users, Mail, UserPlus, Shield, Eye, Edit } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
 export default function Family() {
-  const { user, loading } = useAuth();
-  const router = useRouter();
   const { toast } = useToast();
   const [familyMembers, setFamilyMembers] = useState<any[]>([]);
   const [showInviteForm, setShowInviteForm] = useState(false);
   const [inviteForm, setInviteForm] = useState({
     email: "",
     name: "",
-    role: "viewer" as "admin" | "editor" | "viewer",
+    role: "viewer",
   });
-
-  useEffect(() => {
-    if (!loading && !user) {
-      router.push("/");
-    }
-  }, [user, loading, router]);
-
-  useEffect(() => {
-    if (user) {
-      loadFamilyMembers();
-    }
-  }, [user]);
-
-  const loadFamilyMembers = async () => {
-    const { data } = await supabase
-      .from("family_members")
-      .select("*")
-      .order("created_at", { ascending: false });
-
-    if (data) {
-      setFamilyMembers(data);
-    }
-  };
 
   const handleInvite = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Generate UUID for new profile
-    const profileId = crypto.randomUUID();
-    
-    // Create profile first
-    const { data: newProfile, error: profileError } = await supabase
-      .from("profiles")
-      .insert({
-        id: profileId,
-        email: inviteForm.email,
-        full_name: inviteForm.name,
-      })
-      .select()
-      .single();
-
-    if (profileError) {
-      toast({ title: "Error", description: profileError.message, variant: "destructive" });
-      return;
-    }
-
-    // Set permissions based on role
-    let permissions = "view";
-    if (inviteForm.role === "editor") permissions = "view,edit";
-    if (inviteForm.role === "admin") permissions = "view,edit,delete,manage";
-
-    const { error } = await supabase.from("family_members").insert({
-      profile_id: newProfile.id,
-      role: inviteForm.role,
-      permissions: permissions,
-    });
-
-    if (error) {
-      toast({ title: "Error", description: error.message, variant: "destructive" });
-    } else {
-      toast({ title: "Success", description: `Invitation sent to ${inviteForm.name}` });
-      setInviteForm({ email: "", name: "", role: "viewer" });
-      setShowInviteForm(false);
-      loadFamilyMembers();
-    }
+    toast({ title: "Success", description: `Invitation sent to ${inviteForm.name}` });
+    setInviteForm({ email: "", name: "", role: "viewer" });
+    setShowInviteForm(false);
   };
 
   const roleDescriptions = {
@@ -95,16 +31,6 @@ export default function Family() {
     editor: "Can add/edit tracking data, manage schedules, full access except deletion",
     admin: "Full control including family member management and settings",
   };
-
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-4 border-terracotta-600 border-t-transparent"></div>
-      </div>
-    );
-  }
-
-  if (!user) return null;
 
   return (
     <>
@@ -162,19 +88,16 @@ export default function Family() {
 
                   <div>
                     <Label htmlFor="role">Access Level / প্রবেশাধিকার</Label>
-                    <Select
+                    <select
+                      id="role"
                       value={inviteForm.role}
-                      onValueChange={(value: "admin" | "editor" | "viewer") => setInviteForm({ ...inviteForm, role: value })}
+                      onChange={(e) => setInviteForm({ ...inviteForm, role: e.target.value })}
+                      className="w-full p-2 border rounded-md"
                     >
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="viewer">Viewer (View Only)</SelectItem>
-                        <SelectItem value="editor">Editor (Can Add Data)</SelectItem>
-                        <SelectItem value="admin">Admin (Full Control)</SelectItem>
-                      </SelectContent>
-                    </Select>
+                      <option value="viewer">Viewer (View Only)</option>
+                      <option value="editor">Editor (Can Add Data)</option>
+                      <option value="admin">Admin (Full Control)</option>
+                    </select>
                   </div>
 
                   <div className="bg-sage-50 p-3 rounded text-sm text-neutral-700">
@@ -208,7 +131,7 @@ export default function Family() {
                         <div className="flex items-center gap-3">
                           <div className="w-10 h-10 rounded-full bg-gradient-to-br from-terracotta-200 to-peach-200 flex items-center justify-center">
                             <span className="text-lg font-bold text-terracotta-700">
-                              {member.name.charAt(0).toUpperCase()}
+                              {member.name?.charAt(0).toUpperCase()}
                             </span>
                           </div>
                           <div>

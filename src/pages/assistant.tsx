@@ -1,8 +1,6 @@
 import { SEO } from "@/components/SEO";
 import { Layout } from "@/components/Layout";
-import { useAuth } from "@/hooks/useAuth";
-import { useRouter } from "next/router";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -16,8 +14,6 @@ interface Message {
 }
 
 export default function Assistant() {
-  const { user, loading } = useAuth();
-  const router = useRouter();
   const [messages, setMessages] = useState<Message[]>([
     {
       role: "assistant",
@@ -27,12 +23,6 @@ export default function Assistant() {
   ]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-
-  useEffect(() => {
-    if (!loading && !user) {
-      router.push("/");
-    }
-  }, [user, loading, router]);
 
   const quickQuestions = [
     { icon: Baby, text: "When to start solid foods?", bangla: "কখন কঠিন খাবার শুরু করবো?" },
@@ -54,7 +44,6 @@ export default function Assistant() {
     setInput("");
     setIsLoading(true);
 
-    // Simulate AI response (in production, this would call OpenAI API)
     setTimeout(() => {
       const assistantMessage: Message = {
         role: "assistant",
@@ -69,16 +58,6 @@ export default function Assistant() {
   const handleQuickQuestion = (question: string) => {
     setInput(question);
   };
-
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-4 border-terracotta-600 border-t-transparent"></div>
-      </div>
-    );
-  }
-
-  if (!user) return null;
 
   return (
     <>

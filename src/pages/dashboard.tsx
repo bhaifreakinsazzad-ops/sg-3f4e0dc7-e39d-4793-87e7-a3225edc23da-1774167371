@@ -1,54 +1,16 @@
 import { SEO } from "@/components/SEO";
 import { Layout } from "@/components/Layout";
-import { useAuth } from "@/hooks/useAuth";
-import { useRouter } from "next/router";
-import { useEffect, useState } from "react";
+import { useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Utensils, Moon, Package, TrendingUp, Clock } from "lucide-react";
 import Image from "next/image";
 import { VoiceQuickLog } from "@/components/VoiceQuickLog";
-import { babyService } from "@/services/babyService";
+import { useRouter } from "next/router";
 
 export default function Dashboard() {
-  const { user, loading } = useAuth();
   const router = useRouter();
-  const [babyId, setBabyId] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (!loading && !user) {
-      router.push("/");
-    }
-  }, [user, loading, router]);
-
-  useEffect(() => {
-    if (user) {
-      loadDashboardData();
-    }
-  }, [user]);
-
-  const loadDashboardData = async () => {
-    if (!user) return;
-
-    try {
-      const babyId = await babyService.getOrCreateBaby(user.id);
-      if (babyId) {
-        setBabyId(babyId);
-      }
-    } catch (err) {
-      console.error("Error in loadDashboardData:", err);
-    }
-  };
-
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-4 border-terracotta-600 border-t-transparent"></div>
-      </div>
-    );
-  }
-
-  if (!user) return null;
+  const [babyId, setBabyId] = useState<string>("yusra-default");
 
   return (
     <>
@@ -62,7 +24,7 @@ export default function Dashboard() {
 
           <div className="grid lg:grid-cols-3 gap-6 mb-6">
             <div className="lg:col-span-2">
-              {babyId && <VoiceQuickLog babyId={babyId} onSuccess={loadDashboardData} />}
+              <VoiceQuickLog babyId={babyId} onSuccess={() => {}} />
             </div>
 
             <Card className="p-6 bg-gradient-to-br from-sage-50 to-cream-50">

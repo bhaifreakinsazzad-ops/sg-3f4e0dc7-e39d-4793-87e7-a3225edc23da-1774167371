@@ -1,6 +1,5 @@
 import { SEO } from "@/components/SEO";
 import { Layout } from "@/components/Layout";
-import { useAuth } from "@/hooks/useAuth";
 import { useRouter } from "next/router";
 import { useEffect, useState } from "react";
 import { Card } from "@/components/ui/card";
@@ -10,52 +9,22 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Utensils, Moon, Package, TrendingUp, Mic, Save } from "lucide-react";
+import { Utensils, Moon, Package, TrendingUp, Save } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { VoiceQuickLog } from "@/components/VoiceQuickLog";
 
 export default function Tracker() {
-  const { user, loading } = useAuth();
   const router = useRouter();
   const { toast } = useToast();
-  const [babyId, setBabyId] = useState<string | null>(null);
+  const babyId = "yusra-default";
   const [activeTab, setActiveTab] = useState("feeding");
-
-  useEffect(() => {
-    if (!loading && !user) {
-      router.push("/");
-    }
-  }, [user, loading, router]);
-
-  useEffect(() => {
-    if (user) {
-      loadBabyProfile();
-    }
-  }, [user]);
 
   useEffect(() => {
     if (router.query.tab) {
       setActiveTab(router.query.tab as string);
     }
   }, [router.query]);
-
-  const loadBabyProfile = async () => {
-    const { data } = await supabase
-      .from("babies")
-      .select("id")
-      .limit(1)
-      .single();
-
-    if (data) {
-      setBabyId(data.id);
-    }
-  };
-
-  const loadAllData = async () => {
-    // Reload baby profile and refresh any cached data
-    await loadBabyProfile();
-  };
 
   const [feedingForm, setFeedingForm] = useState({
     feeding_time: new Date().toISOString().slice(0, 16),
@@ -91,7 +60,6 @@ export default function Tracker() {
 
   const handleFeedingSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!babyId) return;
 
     const { error } = await supabase.from("feedings").insert({
       baby_id: babyId,
@@ -117,7 +85,6 @@ export default function Tracker() {
 
   const handleSleepSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!babyId) return;
 
     const { error } = await supabase.from("sleep_sessions").insert({
       baby_id: babyId,
@@ -141,7 +108,6 @@ export default function Tracker() {
 
   const handleDiaperSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!babyId) return;
 
     const { error } = await supabase.from("diaper_changes").insert({
       baby_id: babyId,
@@ -166,7 +132,6 @@ export default function Tracker() {
 
   const handleGrowthSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!babyId) return;
 
     const { error } = await supabase.from("growth_records").insert({
       baby_id: babyId,
@@ -190,16 +155,6 @@ export default function Tracker() {
     }
   };
 
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-4 border-terracotta-600 border-t-transparent"></div>
-      </div>
-    );
-  }
-
-  if (!user) return null;
-
   return (
     <>
       <SEO title="Tracker - Yusra's Manager" description="Track Yusra's daily activities" />
@@ -210,11 +165,9 @@ export default function Tracker() {
             <p className="text-neutral-600">ট্র্যাকার - Log Yusra's Activities</p>
           </div>
 
-          {babyId && (
-            <div className="mb-6">
-              <VoiceQuickLog babyId={babyId} onSuccess={loadAllData} />
-            </div>
-          )}
+          <div className="mb-6">
+            <VoiceQuickLog babyId={babyId} onSuccess={() => {}} />
+          </div>
 
           <Tabs defaultValue="feeding" className="space-y-6">
             <TabsList className="grid w-full grid-cols-4 mb-6">
