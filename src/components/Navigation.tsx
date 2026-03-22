@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { useRouter } from "next/router";
-import { Home, Calendar, Activity, MessageCircle, AlertCircle, Users, Camera, ShoppingCart } from "lucide-react";
+import { Home, Activity, Calendar, MessageCircle, AlertCircle, Users, Camera, ShoppingCart } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const navItems = [

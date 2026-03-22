@@ -9,8 +9,8 @@ interface SEOProps {
 
 // SEO elements that can be used in _document.tsx (returns JSX without Head wrapper)
 export function SEOElements({
-  title = "Hello World",
-  description = "Welcome to my app",
+  title = "Queen Yusra Dynasty",
+  description = "Farah Yusra Bahar (First of her name, niece of the dragon) Powered by Nagib Bahar & Nuzhat Urmi",
   image = "/og-image.png",
   url,
 }: SEOProps) {
