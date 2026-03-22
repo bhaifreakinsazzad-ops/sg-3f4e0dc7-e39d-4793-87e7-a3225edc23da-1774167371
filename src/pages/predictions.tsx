@@ -1,15 +1,10 @@
 import { SEO } from "@/components/SEO";
 import { Layout } from "@/components/Layout";
-import { useAuth } from "@/hooks/useAuth";
-import { useRouter } from "next/router";
-import { useEffect, useState } from "react";
+import { useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { Baby, Moon, Droplet, Clock, TrendingUp, Bell } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
 
 export default function Predictions() {
-  const { user, loading } = useAuth();
-  const router = useRouter();
   const [predictions, setPredictions] = useState({
     nextFeeding: { time: "2:30 PM", confidence: 85, minutesUntil: 45 },
     nextSleep: { time: "4:15 PM", confidence: 78, minutesUntil: 150 },
@@ -17,20 +12,10 @@ export default function Predictions() {
   });
 
   useEffect(() => {
-    if (!loading && !user) {
-      router.push("/");
-    }
-  }, [user, loading, router]);
+    analyzePatternsAndPredict();
+  }, []);
 
-  useEffect(() => {
-    if (user) {
-      analyzePatternsAndPredict();
-    }
-  }, [user]);
-
-  const analyzePatternsAndPredict = async () => {
-    // In production, this would analyze historical data to predict next events
-    // For now, showing example predictions based on typical baby patterns
+  const analyzePatternsAndPredict = () => {
     const now = new Date();
     const predictions = {
       nextFeeding: {
@@ -69,16 +54,6 @@ export default function Predictions() {
     }
     return `${mins} minutes`;
   };
-
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-4 border-terracotta-600 border-t-transparent"></div>
-      </div>
-    );
-  }
-
-  if (!user) return null;
 
   return (
     <>

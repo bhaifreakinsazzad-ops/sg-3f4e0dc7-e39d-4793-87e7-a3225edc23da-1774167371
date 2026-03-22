@@ -1,23 +1,11 @@
 import { SEO } from "@/components/SEO";
 import { Layout } from "@/components/Layout";
-import { useAuth } from "@/hooks/useAuth";
-import { useRouter } from "next/router";
-import { useEffect, useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { AlertCircle, Phone, MapPin, Activity, Thermometer, Wind, AlertTriangle } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 export default function Emergency() {
-  const { user, loading } = useAuth();
-  const router = useRouter();
-
-  useEffect(() => {
-    if (!loading && !user) {
-      router.push("/");
-    }
-  }, [user, loading, router]);
-
   const hospitals = [
     {
       name: "Apollo Hospitals Dhaka",
@@ -103,16 +91,6 @@ export default function Emergency() {
       ],
     },
   ];
-
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-4 border-terracotta-600 border-t-transparent"></div>
-      </div>
-    );
-  }
-
-  if (!user) return null;
 
   return (
     <>

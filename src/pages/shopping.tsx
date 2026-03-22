@@ -1,22 +1,10 @@
 import { SEO } from "@/components/SEO";
 import { Layout } from "@/components/Layout";
-import { useAuth } from "@/hooks/useAuth";
-import { useRouter } from "next/router";
-import { useEffect, useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ShoppingCart, Package, TrendingUp, ExternalLink, AlertCircle } from "lucide-react";
 
 export default function Shopping() {
-  const { user, loading } = useAuth();
-  const router = useRouter();
-
-  useEffect(() => {
-    if (!loading && !user) {
-      router.push("/");
-    }
-  }, [user, loading, router]);
-
   const shoppingLists = {
     urgent: [
       { item: "Diapers (Huggies Newborn)", quantity: "1 pack (28 pcs)", reason: "Predicted to run out in 2 days" },
@@ -50,16 +38,6 @@ export default function Shopping() {
       ],
     },
   ];
-
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-4 border-terracotta-600 border-t-transparent"></div>
-      </div>
-    );
-  }
-
-  if (!user) return null;
 
   return (
     <>
