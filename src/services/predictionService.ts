@@ -4,7 +4,7 @@ export const predictionService = {
   async analyzeFeedingPattern(babyId: string) {
     const { data } = await supabase
       .from("feedings")
-      .select("feeding_time, duration_minutes, type")
+      .select("feeding_time, duration_minutes, feeding_type")
       .eq("baby_id", babyId)
       .order("feeding_time", { ascending: false })
       .limit(20);

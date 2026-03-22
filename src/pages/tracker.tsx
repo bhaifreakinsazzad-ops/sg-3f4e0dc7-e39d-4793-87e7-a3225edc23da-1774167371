@@ -3,22 +3,23 @@ import { Layout } from "@/components/Layout";
 import { useAuth } from "@/hooks/useAuth";
 import { useRouter } from "next/router";
 import { useEffect, useState } from "react";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Utensils, Moon, Package, TrendingUp, Mic, Save } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { Baby, Moon, Droplet, TrendingUp, Pill, Syringe, Calendar, Save } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { VoiceQuickLog } from "@/components/VoiceQuickLog";
 
 export default function Tracker() {
   const { user, loading } = useAuth();
   const router = useRouter();
   const { toast } = useToast();
-  const [babyId, setBabyId] = useState<string>("");
+  const [babyId, setBabyId] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState("feeding");
 
   useEffect(() => {
@@ -49,6 +50,11 @@ export default function Tracker() {
     if (data) {
       setBabyId(data.id);
     }
+  };
+
+  const loadAllData = async () => {
+    // Reload baby profile and refresh any cached data
+    await loadBabyProfile();
   };
 
   const [feedingForm, setFeedingForm] = useState({
@@ -196,18 +202,24 @@ export default function Tracker() {
 
   return (
     <>
-      <SEO title="Tracker - Yusra's Manager" description="Track all of Yusra's daily activities" />
+      <SEO title="Tracker - Yusra's Manager" description="Track Yusra's daily activities" />
       <Layout>
         <div className="max-w-4xl mx-auto">
           <div className="mb-6">
-            <h1 className="text-3xl font-bold font-baloo text-terracotta-600 mb-2">Activity Tracker</h1>
-            <p className="text-neutral-600">কার্যকলাপ ট্র্যাকার - Track Yusra's daily activities</p>
+            <h1 className="text-3xl font-bold font-baloo text-terracotta-600 mb-2">Tracker</h1>
+            <p className="text-neutral-600">ট্র্যাকার - Log Yusra's Activities</p>
           </div>
 
-          <Tabs value={activeTab} onValueChange={setActiveTab}>
+          {babyId && (
+            <div className="mb-6">
+              <VoiceQuickLog babyId={babyId} onSuccess={loadAllData} />
+            </div>
+          )}
+
+          <Tabs defaultValue="feeding" className="space-y-6">
             <TabsList className="grid w-full grid-cols-4 mb-6">
               <TabsTrigger value="feeding" className="gap-2">
-                <Baby className="w-4 h-4" />
+                <Utensils className="w-4 h-4" />
                 <span className="hidden sm:inline">Feeding</span>
               </TabsTrigger>
               <TabsTrigger value="sleep" className="gap-2">
@@ -215,7 +227,7 @@ export default function Tracker() {
                 <span className="hidden sm:inline">Sleep</span>
               </TabsTrigger>
               <TabsTrigger value="diaper" className="gap-2">
-                <Droplet className="w-4 h-4" />
+                <Package className="w-4 h-4" />
                 <span className="hidden sm:inline">Diaper</span>
               </TabsTrigger>
               <TabsTrigger value="growth" className="gap-2">
@@ -227,7 +239,7 @@ export default function Tracker() {
             <TabsContent value="feeding">
               <Card className="p-6">
                 <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
-                  <Baby className="w-5 h-5 text-terracotta-600" />
+                  <Utensils className="w-5 h-5 text-terracotta-600" />
                   Log Feeding / খাবার লগ করুন
                 </h2>
                 <form onSubmit={handleFeedingSubmit} className="space-y-4">
@@ -406,7 +418,7 @@ export default function Tracker() {
             <TabsContent value="diaper">
               <Card className="p-6">
                 <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
-                  <Droplet className="w-5 h-5 text-peach-600" />
+                  <Package className="w-5 h-5 text-peach-600" />
                   Log Diaper Change / ডায়াপার পরিবর্তন লগ করুন
                 </h2>
                 <form onSubmit={handleDiaperSubmit} className="space-y-4">

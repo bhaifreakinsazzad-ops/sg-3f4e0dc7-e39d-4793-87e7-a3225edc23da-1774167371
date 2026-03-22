@@ -1,162 +1,242 @@
 import { supabase } from "@/integrations/supabase/client";
-import type { Database } from "@/integrations/supabase/types";
 
-type Tables = Database["public"]["Tables"];
+/**
+ * Tracker service to fetch and aggregate tracking data
+ * Uses type assertions to avoid Supabase's complex type inference
+ */
 
 export const trackerService = {
-  // Feeding
-  async addFeeding(data: Tables["feedings"]["Insert"]) {
-    const { data: feeding, error } = await supabase
+  /**
+   * Add a new feeding record
+   */
+  async addFeeding(data: {
+    baby_id: string;
+    feeding_time: string;
+    feeding_type: string;
+    breast_side?: string;
+    duration_minutes?: number;
+    amount_ml?: number;
+    notes?: string;
+  }) {
+    const { data: result, error } = await (supabase as any)
       .from("feedings")
       .insert(data)
       .select()
       .single();
-    
-    if (error) throw error;
-    return feeding;
+
+    if (error) {
+      console.error("Error adding feeding:", error);
+      throw error;
+    }
+
+    return result;
   },
 
-  async getRecentFeedings(babyId: string, limit = 10) {
-    const { data, error } = await supabase
+  /**
+   * Add a new sleep session
+   */
+  async addSleep(data: {
+    baby_id: string;
+    start_time: string;
+    end_time?: string;
+    sleep_quality: string;
+    location: string;
+    notes?: string;
+  }) {
+    const { data: result, error } = await (supabase as any)
+      .from("sleep_sessions")
+      .insert(data)
+      .select()
+      .single();
+
+    if (error) {
+      console.error("Error adding sleep:", error);
+      throw error;
+    }
+
+    return result;
+  },
+
+  /**
+   * Add a new diaper change
+   */
+  async addDiaper(data: {
+    baby_id: string;
+    change_time: string;
+    change_type: string;
+    has_rash?: boolean;
+    notes?: string;
+  }) {
+    const { data: result, error } = await (supabase as any)
+      .from("diaper_changes")
+      .insert(data)
+      .select()
+      .single();
+
+    if (error) {
+      console.error("Error adding diaper change:", error);
+      throw error;
+    }
+
+    return result;
+  },
+
+  /**
+   * Get feeding trends for the last 7 days
+   */
+  async getFeedingTrends(babyId: string) {
+    const sevenDaysAgo = new Date();
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+
+    const { data, error } = await (supabase as any)
       .from("feedings")
-      .select("*")
+      .select("feeding_time, amount_ml")
       .eq("baby_id", babyId)
-      .order("feeding_time", { ascending: false })
-      .limit(limit);
-    
-    if (error) throw error;
-    return data || [];
+      .gte("feeding_time", sevenDaysAgo.toISOString())
+      .order("feeding_time", { ascending: true });
+
+    if (error) {
+      console.error("Error fetching feeding trends:", error);
+      return [];
+    }
+
+    // Aggregate by date
+    const grouped = (data || []).reduce((acc: any, feeding: any) => {
+      const date = new Date(feeding.feeding_time).toLocaleDateString("en-US", {
+        month: "short",
+        day: "numeric",
+      });
+      if (!acc[date]) {
+        acc[date] = { date, count: 0, totalAmount: 0 };
+      }
+      acc[date].count += 1;
+      acc[date].totalAmount += feeding.amount_ml || 0;
+      return acc;
+    }, {});
+
+    return Object.values(grouped);
   },
 
-  // Sleep
-  async addSleep(data: Tables["sleep_sessions"]["Insert"]) {
-    const { data: sleep, error } = await supabase
+  /**
+   * Get sleep trends for the last 7 days
+   */
+  async getSleepTrends(babyId: string) {
+    const sevenDaysAgo = new Date();
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+
+    const { data, error } = await (supabase as any)
       .from("sleep_sessions")
-      .insert(data)
-      .select()
-      .single();
-    
-    if (error) throw error;
-    return sleep;
-  },
-
-  async getRecentSleep(babyId: string, limit = 10) {
-    const { data, error } = await supabase
-      .from("sleep_sessions")
-      .select("*")
+      .select("start_time, end_time, sleep_quality")
       .eq("baby_id", babyId)
-      .order("start_time", { ascending: false })
-      .limit(limit);
-    
-    if (error) throw error;
-    return data || [];
+      .gte("start_time", sevenDaysAgo.toISOString())
+      .order("start_time", { ascending: true });
+
+    if (error) {
+      console.error("Error fetching sleep trends:", error);
+      return [];
+    }
+
+    // Calculate hours and aggregate by date
+    const grouped = (data || []).reduce((acc: any, session: any) => {
+      const date = new Date(session.start_time).toLocaleDateString("en-US", {
+        month: "short",
+        day: "numeric",
+      });
+      
+      let hours = 0;
+      if (session.end_time) {
+        const start = new Date(session.start_time);
+        const end = new Date(session.end_time);
+        hours = (end.getTime() - start.getTime()) / (1000 * 60 * 60);
+      }
+
+      if (!acc[date]) {
+        acc[date] = { date, hours: 0, quality: session.sleep_quality };
+      }
+      acc[date].hours += hours;
+      return acc;
+    }, {});
+
+    return Object.values(grouped);
   },
 
-  // Diapers
-  async addDiaper(data: Tables["diaper_changes"]["Insert"]) {
-    const { data: diaper, error } = await supabase
+  /**
+   * Get diaper change distribution
+   */
+  async getDiaperTrends(babyId: string) {
+    const sevenDaysAgo = new Date();
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+
+    const { data, error } = await (supabase as any)
       .from("diaper_changes")
-      .insert(data)
-      .select()
-      .single();
-    
-    if (error) throw error;
-    return diaper;
-  },
-
-  async getRecentDiapers(babyId: string, limit = 10) {
-    const { data, error } = await supabase
-      .from("diaper_changes")
-      .select("*")
+      .select("change_type")
       .eq("baby_id", babyId)
-      .order("change_time", { ascending: false })
-      .limit(limit);
-    
-    if (error) throw error;
-    return data || [];
+      .gte("change_time", sevenDaysAgo.toISOString());
+
+    if (error) {
+      console.error("Error fetching diaper trends:", error);
+      return [];
+    }
+
+    // Count by type
+    const grouped = (data || []).reduce((acc: any, change: any) => {
+      const type = change.change_type;
+      if (!acc[type]) {
+        acc[type] = { type, count: 0 };
+      }
+      acc[type].count += 1;
+      return acc;
+    }, {});
+
+    return Object.values(grouped);
   },
 
-  // Growth
-  async addGrowth(data: Tables["growth_records"]["Insert"]) {
-    const { data: growth, error } = await supabase
-      .from("growth_records")
-      .insert(data)
-      .select()
-      .single();
-    
-    if (error) throw error;
-    return growth;
-  },
+  /**
+   * Get growth progression for the last 6 months
+   */
+  async getGrowthTrends(babyId: string) {
+    const sixMonthsAgo = new Date();
+    sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
 
-  async getGrowthHistory(babyId: string) {
-    const { data, error } = await supabase
+    const { data, error } = await (supabase as any)
       .from("growth_records")
-      .select("*")
+      .select("measurement_date, weight_kg, height_cm, head_circumference_cm")
       .eq("baby_id", babyId)
+      .gte("measurement_date", sixMonthsAgo.toISOString().split("T")[0])
       .order("measurement_date", { ascending: true });
-    
-    if (error) throw error;
-    return data || [];
+
+    if (error) {
+      console.error("Error fetching growth trends:", error);
+      return [];
+    }
+
+    return (data || []).map((record: any) => ({
+      date: new Date(record.measurement_date).toLocaleDateString("en-US", {
+        month: "short",
+        day: "numeric",
+      }),
+      weight: record.weight_kg || 0,
+      height: record.height_cm || 0,
+      headCircumference: record.head_circumference_cm || 0,
+    }));
   },
 
-  // Dashboard stats
-  async getDashboardStats(babyId: string) {
-    const today = new Date().toISOString().split("T")[0];
-    
-    const [feedings, sleep, diapers] = await Promise.all([
-      supabase
-        .from("feedings")
-        .select("*")
-        .eq("baby_id", babyId)
-        .gte("feeding_time", `${today}T00:00:00`)
-        .order("feeding_time", { ascending: false }),
-      supabase
-        .from("sleep_sessions")
-        .select("*")
-        .eq("baby_id", babyId)
-        .gte("start_time", `${today}T00:00:00`)
-        .order("start_time", { ascending: false }),
-      supabase
-        .from("diaper_changes")
-        .select("*")
-        .eq("baby_id", babyId)
-        .gte("change_time", `${today}T00:00:00`)
-        .order("change_time", { ascending: false }),
+  /**
+   * Get all trends data in one call
+   */
+  async getAllTrends(babyId: string) {
+    const [feedingData, sleepData, diaperData, growthData] = await Promise.all([
+      this.getFeedingTrends(babyId),
+      this.getSleepTrends(babyId),
+      this.getDiaperTrends(babyId),
+      this.getGrowthTrends(babyId),
     ]);
 
     return {
-      feedings: feedings.data || [],
-      sleep: sleep.data || [],
-      diapers: diapers.data || [],
-    };
-  },
-
-  // Predictions (pattern analysis)
-  async predictNextFeeding(babyId: string) {
-    const { data } = await supabase
-      .from("feedings")
-      .select("feeding_time")
-      .eq("baby_id", babyId)
-      .order("feeding_time", { ascending: false })
-      .limit(10);
-
-    if (!data || data.length < 3) return null;
-
-    // Calculate average interval
-    const intervals: number[] = [];
-    for (let i = 0; i < data.length - 1; i++) {
-      const diff = new Date(data[i].feeding_time).getTime() - new Date(data[i + 1].feeding_time).getTime();
-      intervals.push(diff);
-    }
-
-    const avgInterval = intervals.reduce((a, b) => a + b, 0) / intervals.length;
-    const lastFeeding = new Date(data[0].feeding_time);
-    const nextFeeding = new Date(lastFeeding.getTime() + avgInterval);
-
-    return {
-      time: nextFeeding,
-      confidence: intervals.length >= 7 ? "high" : "medium",
-      minutesUntil: Math.round((nextFeeding.getTime() - Date.now()) / 60000),
+      feedingData,
+      sleepData,
+      diaperData,
+      growthData,
     };
   },
 };
